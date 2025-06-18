@@ -13,7 +13,7 @@ static pv_picovoice_t *handle = NULL;
 
 static int8_t memory_buffer[MEMORY_BUFFER_SIZE] __attribute__((aligned(16)));
 
-static const float PORCUPINE_SENSITIVITY = 0.5f;
+static const float PORCUPINE_SENSITIVITY = 0.75f;
 static const float RHINO_SENSITIVITY = 0.5f;
 static const float RHINO_ENDPOINT_DURATION_SEC = 1.0f;
 static const bool RHINO_REQUIRE_ENDPOINT = true;
