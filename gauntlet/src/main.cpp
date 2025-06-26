@@ -4,7 +4,7 @@
 //if using this its best to collect arround 15-20 minutes of data
 
 #include <Arduino.h>
-#include <LSM9DS1.h>
+#include <Arduino_BMI270_BMM150.h>
 #include <neotimer.h>
 #include <SensorFusion.h>
 
@@ -31,7 +31,10 @@ void setup(){
     Serial.begin(115200);
     while (!Serial);
 
-    IMU.begin();
+    if (!IMU.begin()) {
+        Serial.println("Failed to initialize IMU!");
+        while (1);
+    }
     
 
 
@@ -73,6 +76,7 @@ Recorder recorder = {0}; //initial state is idle
         
 
         if(secTimer_10.done()){
+            secTimer_10.stop();
             digitalWrite(LEDB, HIGH);
             digitalWrite(LEDR, LOW);
             delay(1000);
