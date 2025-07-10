@@ -217,3 +217,6 @@ void loop() {
 }
 
 
+#if !defined(EI_CLASSIFIER_SENSOR) || EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_FUSION
+#error "Invalid model for current sensor"
+#endif
