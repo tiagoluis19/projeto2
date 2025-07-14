@@ -35,6 +35,7 @@ static void wake_word_callback(void) {
 
 char inference_str[50]; // buffer for inference results
 char slot_str[50]; // buffer for slot values
+char newstring[50]; // buffer for new string
 
 
 static void inference_callback(pv_inference_t *inference) {
@@ -59,7 +60,10 @@ static void inference_callback(pv_inference_t *inference) {
         }
     }
     Serial.println("}\n");
-    Serial1.println(sprintf("0 I %s, S %s", inference_str, slot_str));
+    
+    sprintf(newstring,"0 I %s, S %s", inference_str, slot_str);
+
+    Serial1.println(newstring); 
 
     pv_inference_delete(inference);
 }
@@ -85,7 +89,7 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
     IMU.begin();
     IMU.setContinuousMode();
 
-    Serial.println("Picovoice EN Example");
+    
   
 
     pv_status_t status = pv_audio_rec_init();
@@ -171,7 +175,7 @@ void loop() {
             }
             pv_free_error_stack(message_stack);
             while (1){
-
+                    Serial.println("Error in Picovoice processing, halting execution.");
             }
         }
     }
