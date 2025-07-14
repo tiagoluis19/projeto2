@@ -6,7 +6,7 @@
 #include <Arduino_BMI270_BMM150.h>
 
 #include <Picovoice_EN.h>
-#include <gestureyay_inferencing.h>
+
 
 #include "params.h"
 
@@ -24,7 +24,7 @@ static pv_picovoice_t *handle = NULL;
 static int8_t memory_buffer[MEMORY_BUFFER_SIZE] __attribute__((aligned(16)));
 
 static const float PORCUPINE_SENSITIVITY = 0.75f;
-static const float RHINO_SENSITIVITY = 0.5f;
+static const float RHINO_SENSITIVITY = 0.90f;
 static const float RHINO_ENDPOINT_DURATION_SEC = 1.0f;
 static const bool RHINO_REQUIRE_ENDPOINT = true;
 
@@ -33,6 +33,10 @@ static void wake_word_callback(void) {
     
 }
 
+char inference_str[50]; // buffer for inference results
+char slot_str[50]; // buffer for slot values
+
+
 static void inference_callback(pv_inference_t *inference) {
     Serial.println("{");
     Serial.print("    is_understood : ");
@@ -40,6 +44,8 @@ static void inference_callback(pv_inference_t *inference) {
     if (inference->is_understood) {
         Serial.print("    intent : ");
         Serial.println(inference->intent);
+        strcpy(inference_str, inference->intent);
+        Serial.print("    num_slots : ");
         if (inference->num_slots > 0) {
             Serial.println("    slots : {");
             for (int32_t i = 0; i < inference->num_slots; i++) {
@@ -47,11 +53,14 @@ static void inference_callback(pv_inference_t *inference) {
                 Serial.print(inference->slots[i]);
                 Serial.print(" : ");
                 Serial.println(inference->values[i]);
+                strcpy(slot_str, inference->values[i]);
             }
             Serial.println("    }");
         }
     }
     Serial.println("}\n");
+    Serial1.println(sprintf("0 I %s, S %s", inference_str, slot_str));
+
     pv_inference_delete(inference);
 }
 
@@ -63,8 +72,16 @@ static void print_error_message(char **message_stack, int32_t message_stack_dept
 
 void setup() {
     Serial.begin(115200);
+    Serial1.begin(115200);
     while (!Serial);
     
+analogReadResolution(12); // set the resolution of the analog read to 12 bits
+
+    pinMode(A1, INPUT); //pointer finger
+    pinMode(A3, INPUT); //middle finger
+    pinMode(A5, INPUT); //ring finger
+    pinMode(A7, INPUT); //pinky finger
+
     IMU.begin();
     IMU.setContinuousMode();
 
@@ -122,18 +139,13 @@ void setup() {
     Serial.println("Wake word: 'hey Turret'");
     Serial.println(rhino_context);
 
-  if (EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME != 6) {
-        ei_printf("ERR: EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME should be equal to 6 (the 6 sensor axes)\n");
-        return;
-    }
+  
 
 
 }
 
-float ei_get_sign(float number) {
-    return (number >= 0.0) ? 1.0 : -1.0;
-}
 
+char IMUstring[50];
 
 void loop() {
 
@@ -164,59 +176,27 @@ void loop() {
         }
     }
 
-    // gestures go here
+    
 
-    float buffer1[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
 
-    for (size_t ix = 0; ix < EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE; ix += 3) {
-        // Determine the next tick (and then sleep later)
-        uint64_t next_tick = micros() + (EI_CLASSIFIER_INTERVAL_MS * 1000);
 
-        IMU.readAcceleration(buffer1[ix], buffer1[ix + 1], buffer1[ix + 2]);
-        IMU.readGyroscope(buffer1[ix + 3], buffer1[ix + 4], buffer1[ix + 5]);
 
-        for (int i = 0; i < 3; i++) {
-            if (fabs(buffer[ix + i]) > MAX_ACCEPTED_RANGE) {
-                buffer1[ix + i] = ei_get_sign(buffer[ix + i]) * MAX_ACCEPTED_RANGE;
-            }
-        }
+if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)&&(analogRead(A7)>=2400)) { 
+    //for manual mode movement o the servos   prolly activate with sec override as SR latch
 
-        buffer1[ix + 0] *= CONVERT_G_TO_MS2;
-        buffer1[ix + 1] *= CONVERT_G_TO_MS2;
-        buffer1[ix + 2] *= CONVERT_G_TO_MS2;
 
-        delayMicroseconds(next_tick - micros());
-    }
+    float ax, ay, az;     
+    float gx, gy, gz; 
+    float mx, my, mz; 
 
-    signal_t signal;
-    int err = numpy::signal_from_buffer(buffer1, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE, &signal);
-    if (err != 0) {
-        ei_printf("Failed to create signal from buffer (%d)\n", err);
-        return;
-    }
-
-    ei_impulse_result_t result = { 0 };
-
-    err = run_classifier(&signal, &result, debug_nn);
-    if (err != EI_IMPULSE_OK) {
-        ei_printf("ERR: Failed to run classifier (%d)\n", err);
-        return;
-    }
-
-    // print the predictions
-    ei_printf("Predictions ");
-    ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-        result.timing.dsp, result.timing.classification, result.timing.anomaly);
-    ei_printf(": \n");
-    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
-    }
-#if EI_CLASSIFIER_HAS_ANOMALY == 1
-    ei_printf("    anomaly score: %.3f\n", result.anomaly);
-#endif
+    IMU.readAcceleration(ax, ay, az);
+    IMU.readGyroscope(gx, gy, gz);  
+    IMU.readMagneticField(mx, my, mz); // attention must me in micro Tesla
+    
+    sprintf(IMUstring, "1 A: %.2f, %.2f, %.2f G: %.2f, %.2f, %.2f M: %.2f, %.2f, %.2f", 
+           ax , ay , az,gx, gy, gz,mx, my, mz);
+    Serial1.println(IMUstring);
+}
 }
 
 
-#if !defined(EI_CLASSIFIER_SENSOR) || EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_FUSION
-#error "Invalid model for current sensor"
-#endif
