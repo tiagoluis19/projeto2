@@ -1,5 +1,11 @@
 #include "Server.h"
 #include "PinsAndDefs.h"
+#include "Audio.h"
+
+#include "radio.h"
+#include "i_dont_hate_you.h"
+
+extern ROMBackgroundAudioWAV audio;
 
 extern float pitch;
 extern float yaw;
@@ -8,6 +14,8 @@ extern bool fire;
 extern bool doRev;
 
 extern WingState targetWingStates[];
+
+extern TurretM turretMode;
 
 WiFiUDP udp;
 
@@ -34,10 +42,12 @@ void ParseCommand(const String& msg){
   
   if(res.intent.length()){
     if(res.intent.startsWith("maintenance")){
-      static bool maintenanceMode = false;
-      maintenanceMode = !maintenanceMode;
-      
-      if(maintenanceMode){
+      turretMode = Manual;
+
+      pitch = 0.0f;
+      yaw = 0.0f;
+
+      if(targetWingStates[0] == Closed){
         targetWingStates[0] = Open;
         targetWingStates[1] = Open;
       }else{
@@ -45,14 +55,59 @@ void ParseCommand(const String& msg){
         targetWingStates[1] = Closed;
       }
 
+    }else if(res.intent.startsWith("sing")){
+        if(res.slot.length() > 0){
+          if(res.slot.startsWith("portal radio music")){
+            PlayAudio(radio_wav, radio_wav_len);
+            Serial.println("Radio");
+
+          }else if(res.slot.startsWith("turret opera")){
+            //PlayAudio(portal_opera_wav, portal_opera_wav_len);
+            Serial.println("Radio");
+          }
+        }
+    }else if(res.intent.startsWith("cakeisalie")){
+      PlayAudio(i_dont_hate_you_wav, i_dont_hate_you_wav_len);
+      Serial.println("hate");
+
+    }else if(res.intent.startsWith("controlovr")){
+      if(turretMode == GloveManual){
+        turretMode = Manual;
+        targetWingStates[0] = Closed;
+        targetWingStates[1] = Closed;
+      }else{
+        turretMode = GloveManual;
+        targetWingStates[0] = Open;
+        targetWingStates[1] = Open;
+      }
     }
 
   }else{
-    if(msg.startsWith("P")){
+    if(msg.startsWith("P") && turretMode == GloveManual){
       String pSubstr = msg.substring(1, msg.indexOf('Y'));
       String ySubstr = msg.substring(msg.indexOf('Y') + 1);
       pitch = pSubstr.toFloat();
       yaw = ySubstr.toFloat();
+
+    }else if(msg.startsWith("open")){
+      targetWingStates[0] = Open;
+      targetWingStates[1] = Open;
+      
+    }else if(msg == "close"){
+      targetWingStates[0] = Closed;
+      targetWingStates[1] = Closed;
+
+    }else if(msg.startsWith("revOn")){
+      doRev = true;
+
+    }else if(msg.startsWith("revOff")){
+      doRev = false;
+
+    }else if(msg.startsWith("fireOn")){
+      fire = true;
+
+    }else if(msg.startsWith("fireOff")){
+      fire = false;
     }
   }
 

@@ -10,15 +10,18 @@
 
 #include "params.h"
 
+#define BTN_PIN 3
+
 #define MEMORY_BUFFER_SIZE (70 * 1024) //pico stuff
 
 #define CONVERT_G_TO_MS2    9.80665f  //EI stuff
 #define MAX_ACCEPTED_RANGE  2.0f 
 
 // IMU stuff
-float gyroX,             gyroY,              gyroZ,             // units dps (degrees per second)
-      gyroDriftX,        gyroDriftY,         gyroDriftZ,        // units dps
+float gyroX,             gyroY,              gyroZ,             // units dps (degrees per second)        // units dps
       gyroCorrectedRoll, gyroCorrectedPitch, gyroCorrectedYaw;  // units degrees (expect minor drift)
+
+float gyroDriftX = 0.01f, gyroDriftY = -0.14f, gyroDriftZ = 0.05f;
 
 long IMULast;
 long lastIMUDeltaMs;
@@ -111,14 +114,19 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
     pinMode(A5, INPUT); //ring finger
     pinMode(A7, INPUT); //pinky finger
 
+    pinMode(BTN_PIN, INPUT_PULLUP);
+
     IMU.begin();
     IMU.setContinuousMode();
 
     pinMode(LEDR,OUTPUT);
     pinMode(LEDB,OUTPUT);
-
+    pinMode(LEDG, OUTPUT);
+    
+    digitalWrite(LEDG, 1);
     digitalWrite(LEDR,1);
     digitalWrite(LEDB,1);
+    
     pv_status_t status = pv_audio_rec_init();
     if (status != PV_STATUS_SUCCESS) {
         Serial.print("Audio init failed with ");
@@ -126,7 +134,7 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
         while (1);
     }
 
-    calibrateIMU(500, 250);
+    //calibrateIMU(1000, 2500);
 
     IMULast = micros();
 
@@ -208,7 +216,6 @@ void loop() {
         }
     }
 
-    
 
   if (readIMU()) {
     long currentTime = micros();
@@ -218,17 +225,52 @@ void loop() {
     CorrIMU();
   }
 
-
-    if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)) { 
-        //for manual mode movement o the servos   prolly activate with sec override as SR latch
+    static bool lastFingerState = false;
+    static bool lastFireState = false;
+    static uint64_t lastGyroMs = 0;
+    //(analogRead(A1) <= 2500) && 
+    if((analogRead(A3)<=2300)) { 
+        //for manual mode movement o the servos prolly activate with sec override as SR latch
         
+        if(!lastFingerState){
+            lastFingerState = true;
+            Serial1.println("revOn");
+        }
+
+        bool fireState = !digitalRead(BTN_PIN);
+        if(fireState != lastFireState){
+            lastFireState = fireState;
+
+            if(fireState){
+                Serial1.println("fireOn");
+            }else{
+                Serial1.println("fireOff");
+            }
+        }
+
         //order is "wrong" on purpose
-        Serial1.println("P" +String(gyroCorrectedRoll)+"Y"+String(-gyroCorrectedPitch)); // send the IMU data to the serial port
-        
-        
-        delay(50);
+        digitalWrite(LEDG, 0);
+        if(millis() - lastGyroMs > 30){
+            Serial1.println("P" +String(gyroCorrectedRoll)+"Y"+String(-gyroCorrectedPitch)); // send the IMU data to the serial port
+        }
+    }else{
+        digitalWrite(LEDG, 1);
 
+        if(lastFingerState){
+            lastFingerState = false;
+            Serial1.println("revOff");
+            Serial1.println("fireOff");
+        }
+
+        if(!digitalRead(BTN_PIN)){
+            gyroCorrectedRoll = 0;
+            gyroCorrectedPitch = 0;
+            gyroCorrectedYaw = 0;
+        }
     }
+
+    //Serial.println("  " + String(analogRead(A1)) + "  " + String(analogRead(A3)) + "  " + String(analogRead(A5)) + "  " + String(analogRead(A7)));
+    //delay(50);
 }
 
 
@@ -259,6 +301,8 @@ void calibrateIMU(uint64_t delayMillis, uint64_t calibrationMillis) {
   gyroDriftY = sumY / calibrationCount;
   gyroDriftZ = sumZ / calibrationCount;
 
+  Serial.println("Gyro drift: X:" + String(gyroDriftX) + " Y:" + String(gyroDriftY) + " Z:" + String(gyroDriftZ));
+  delay(1000);
 }
 
 bool readIMU() {

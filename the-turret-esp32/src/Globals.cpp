@@ -2,22 +2,24 @@
 #include <PCA9685.h>
 #include <INA226.h>
 #include <NeoPixelBus.h>
-#include <AsyncTCP.h>
+#include <BackgroundAudioWAV.h>
+#include <ESP32I2SAudio.h>
 #include "PinsAndDefs.h"
-
 
 
 PCA9685 pwm(Wire); //Default 0x40 Address
 PCA9685_ServoEval pwmServo;
 
-//AsyncServer TCPServer(21);
-//AsyncClient *clients[MAX_TCP_CLIENTS] = {}; //Keep track of clients
 
 INA226 currSens[2] = {INA226(0x41), INA226(0x44)};
 
 NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> leds(12, NEOPIXEL_RING_PIN);
 NeoGamma<NeoGammaTableMethod> gammaCorr;
 
+TurretM turretMode = Manual;
+
+ESP32I2SAudio i2sAudio(BCLK, LRCLK, DOUT); // BCLK, LRCLK, DOUT (,MCLK)
+ROMBackgroundAudioWAV audio(i2sAudio);
 
 uint8_t feederSensePins[2] = {FEEDER_SENSE_R, FEEDER_SENSE_L};
 uint8_t fireSolenoidPins[2] = {FIRE_SOLENOID_PIN_R, FIRE_SOLENOID_PIN_L};

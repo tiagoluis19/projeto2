@@ -4,7 +4,7 @@
 #include "PCA9685.h"
 #include "AuxFuncs.h"
 #include "PinsAndDefs.h"
-
+#include "Audio.h"
 
 
 extern PCA9685 pwm;
@@ -55,8 +55,10 @@ void WingLoop(){
   digitalWrite(LASERS_PIN, doRev);
 
   for(uint8_t i = 0; i < WINGS; i++){
-    if(wingStates[i] != targetWingStates[i]){
+    pitches[i] = pitch;
+    yaws[i] = yaw;
 
+    if(wingStates[i] != targetWingStates[i]){
       if(targetWingStates[i] == Closed){ //=====-----
 
         if(wingStates[i] == Open || wingStates[i] == Opening){
@@ -270,7 +272,8 @@ void setup() {
         }
     }
     InitServer();
-    
+    InitAudio();
+
     delay(2500); //Prevents boot from being high when opening serial
     Serial.println(WiFi.softAPIP());
 }

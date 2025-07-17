@@ -7,8 +7,8 @@
 #define FIRE_REV_MS 3000
 
 #define PADDLE_IDLE_STOP_MS 5000
-#define FIRE_REV_IDLE_COEF 0.4f
-#define FIRE_REV_ACTIVE_COEF 0.8f
+#define FIRE_REV_IDLE_COEF 0.7f
+#define FIRE_REV_ACTIVE_COEF 1.0f
 
 #define BBBALANCE_CLUMP_THRESHOLD 2
 #define BBBALANCE_JAM_THRESHOLD 5
@@ -85,6 +85,10 @@
 #define NEOPIXEL_RING_PIN 15
 #define BTN_PIN 0
 
+#define BCLK 26
+#define LRCLK 33
+#define DOUT 25
+
 
 #ifndef ENUMS
     #define ENUMS
@@ -93,5 +97,6 @@
     enum WingState {Unknown, Open, Closing, ClosingSlow, Closed, Opening, Zeroing};
     enum FireState {Ready, SolOn, SolOff};
     enum FeedState {Nominal, Jam, Clump, Cooldown};
+    enum TurretM {Autonomous, GloveManual, Manual};
 
 #endif
