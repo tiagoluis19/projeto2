@@ -7,7 +7,11 @@
 #define HOST "192.168.4.1"
 #define PORT 21
 
-AsyncClient client;
+//AsyncClient client;
+
+#include <WiFiUdp.h>
+
+WiFiUDP udp;
 
 void setup() {
 
@@ -30,15 +34,6 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP()); // Print the local IP address
 
-  delay(50);
-  if (client.connect(HOST, PORT)) { // Connect to the server
-    Serial.println("Connected to server");
-    client.setNoDelay(true);
-    digitalWrite(2, 0); // LED has inverted logic
-  } else {
-    Serial.println("Connection failed");
-    digitalWrite(2, 0); // LED has inverted logic
-  }
 }
 
 char buffer[100];
@@ -47,23 +42,15 @@ char buffer[100];
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if (Serial.available() && false) { // Check if data is available on Serial
+  if (Serial.available()) { // Check if data is available on Serial
     int bytesRead = Serial.readBytes(buffer, sizeof(buffer) - 1); // Read data into buffer
     buffer[bytesRead] = '\0'; // Null-terminate the string
     Serial.println(buffer); // Print the received data to Serial 
     
-    
-    // Transmit the data using ESPAsyncTCP
-    if (client.canSend()) { // Check if the client can send data
-      client.write(buffer, bytesRead); // Write the data to the client
-      client.send(); // Send the data
-      //delay(10);
-    }
+    udp.beginPacket("255.255.255.255", 21);
+    udp.write(buffer);
+    udp.endPacket();
   }
-
-  //client.write("anotsolongtestspring", sizeof("anotsolongtestspring"));
-  //client.send();
-  //delay(10);
 }
 
 

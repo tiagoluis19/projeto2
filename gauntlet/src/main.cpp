@@ -40,7 +40,7 @@ static const bool RHINO_REQUIRE_ENDPOINT = true;
 
 static void wake_word_callback(void) {
     Serial.println("Wake word detected!");
-    Serial1.println("wwu");
+    Serial1.println("WD");
     digitalWrite(LEDR,0);
     osDelay(200);
     digitalWrite(LEDR,1);
@@ -78,10 +78,16 @@ static void inference_callback(pv_inference_t *inference) {
     }
     Serial.println("}\n");
     
-    newstring[sprintf(newstring,"0 I %s, S %s", inference_str, slot_str)] = 0;
-
-    Serial1.println(newstring); 
+    //newstring[sprintf(newstring,"0 I %s, S %s", inference_str, slot_str)] = 0;
+    //Serial1.println(newstring); 
+    String msg ="<" + String(inference->intent) + ">";
     
+    if(inference->num_slots > 0){
+        msg += "{" + String(inference->values[0]) + "}";
+    }
+    Serial1.println(msg);
+
+
     pv_inference_delete(inference);
     osDelay(200);
     digitalWrite(LEDB,1);
