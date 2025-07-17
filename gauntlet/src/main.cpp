@@ -15,7 +15,17 @@
 #define CONVERT_G_TO_MS2    9.80665f  //EI stuff
 #define MAX_ACCEPTED_RANGE  2.0f 
 
+// IMU stuff
+float gyroX,             gyroY,              gyroZ,             // units dps (degrees per second)
+      gyroDriftX,        gyroDriftY,         gyroDriftZ,        // units dps
+      gyroCorrectedRoll, gyroCorrectedPitch, gyroCorrectedYaw;  // units degrees (expect minor drift)
 
+long IMULast;
+long lastIMUDeltaMs;
+
+bool readIMU();
+void CorrIMU();
+void calibrateIMU(uint64_t, uint64_t);
 
 static const char *ACCESS_KEY = "DLpSOMDCfmdoqWzfa/dFjuWtXfntd98N1+gHSXPSxPuAOOqZYZN2tg=="; // AccessKey string obtained from Picovoice Console (https://picovoice.ai/console/)
 
@@ -110,6 +120,10 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
         while (1);
     }
 
+    calibrateIMU(500, 250);
+
+    IMULast = micros();
+
     char **message_stack = NULL;
     int32_t message_stack_depth = 0;
     pv_status_t error_status;
@@ -159,13 +173,6 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
 
 }
 
-
-char IMUstring[70];
-  float ax, ay, az;     
-    float gx, gy, gz; 
-    float mx, my, mz; 
-float mxold, myold, mzold;
-
 void loop() {
 
     
@@ -197,28 +204,70 @@ void loop() {
 
     
 
+  if (readIMU()) {
+    long currentTime = micros();
+    lastIMUDeltaMs = currentTime - IMULast; // expecting this to be ~104Hz +- 4%
+    IMULast = currentTime;
+
+    CorrIMU();
+  }
 
 
-
-if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)) { 
-    //for manual mode movement o the servos   prolly activate with sec override as SR latch
-
-    IMU.readAcceleration(ax, ay, az);
-    IMU.readGyroscope(gx, gy, gz);  
-    static uint64_t timestamp=0;
-    if(millis()-timestamp>110){
-        IMU.readMagneticField(mx, my, mz);
-        timestamp= millis();
-    }
-
+    if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)) { 
+        //for manual mode movement o the servos   prolly activate with sec override as SR latch
         
-        Serial1.println("<1 A:"+String(ax)+", "+String(ay)+", "+String(az)+ " G:" +String(gx)+", "+String(gy)+", "+String(gz) + " M:" +String(mx)+", "+String(my)+", "+String(mz)+">" ); // send the IMU data to the serial port
-    
-    
-    delay(50);
-    
+        //order is "wrong" on purpose
+        Serial1.println("P" +String(gyroCorrectedRoll)+"Y"+String(-gyroCorrectedPitch)); // send the IMU data to the serial port
+        
+        
+        delay(50);
+
+    }
+}
+
+
+void calibrateIMU(uint64_t delayMillis, uint64_t calibrationMillis) {
+
+  int calibrationCount = 0;
+
+  delay(delayMillis); // to avoid shakes after pressing reset button
+
+  float sumX = 0, sumY = 0, sumZ = 0;
+  uint64_t startTime = millis();
+  while (millis() < startTime + calibrationMillis) {
+    if (readIMU()) {
+      // in an ideal world gyroX/Y/Z == 0, anything higher or lower represents drift
+      sumX += gyroX;
+      sumY += gyroY;
+      sumZ += gyroZ;
+
+      calibrationCount++;
+    }
+  }
+
+  if (calibrationCount == 0) {
+    Serial.println("Failed to calibrate");
+  }
+
+  gyroDriftX = sumX / calibrationCount;
+  gyroDriftY = sumY / calibrationCount;
+  gyroDriftZ = sumZ / calibrationCount;
 
 }
+
+bool readIMU() {
+  if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable() ) {
+    IMU.readGyroscope(gyroX, gyroY, gyroZ);
+    return true;
+  }
+  return false;
 }
 
 
+void CorrIMU() {
+  float lastFrequency = (float) 1000000.0 / lastIMUDeltaMs;
+
+  gyroCorrectedRoll = gyroCorrectedRoll + ((gyroX - gyroDriftX) / lastFrequency);
+  gyroCorrectedPitch = gyroCorrectedPitch + ((gyroY - gyroDriftY) / lastFrequency);
+  gyroCorrectedYaw = gyroCorrectedYaw + ((gyroZ - gyroDriftZ) / lastFrequency);
+}
