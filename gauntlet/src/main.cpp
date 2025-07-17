@@ -14,7 +14,7 @@
 
 #define CONVERT_G_TO_MS2    9.80665f  //EI stuff
 #define MAX_ACCEPTED_RANGE  2.0f 
-static bool debug_nn = false;
+
 
 
 static const char *ACCESS_KEY = "DLpSOMDCfmdoqWzfa/dFjuWtXfntd98N1+gHSXPSxPuAOOqZYZN2tg=="; // AccessKey string obtained from Picovoice Console (https://picovoice.ai/console/)
@@ -24,12 +24,16 @@ static pv_picovoice_t *handle = NULL;
 static int8_t memory_buffer[MEMORY_BUFFER_SIZE] __attribute__((aligned(16)));
 
 static const float PORCUPINE_SENSITIVITY = 0.75f;
-static const float RHINO_SENSITIVITY = 0.90f;
+static const float RHINO_SENSITIVITY = 0.65f;
 static const float RHINO_ENDPOINT_DURATION_SEC = 1.0f;
 static const bool RHINO_REQUIRE_ENDPOINT = true;
 
 static void wake_word_callback(void) {
     Serial.println("Wake word detected!");
+    Serial1.println("wwu");
+    digitalWrite(LEDR,0);
+    osDelay(200);
+    digitalWrite(LEDR,1);
     
 }
 
@@ -42,7 +46,10 @@ static void inference_callback(pv_inference_t *inference) {
     Serial.println("{");
     Serial.print("    is_understood : ");
     Serial.println(inference->is_understood ? "true" : "false");
+    digitalWrite(LEDB,!inference->is_understood);
+    
     if (inference->is_understood) {
+        
         Serial.print("    intent : ");
         Serial.println(inference->intent);
         strcpy(inference_str, inference->intent);
@@ -61,11 +68,13 @@ static void inference_callback(pv_inference_t *inference) {
     }
     Serial.println("}\n");
     
-    sprintf(newstring,"0 I %s, S %s", inference_str, slot_str);
+    newstring[sprintf(newstring,"0 I %s, S %s", inference_str, slot_str)] = 0;
 
     Serial1.println(newstring); 
-
+    
     pv_inference_delete(inference);
+    osDelay(200);
+    digitalWrite(LEDB,1);
 }
 
 static void print_error_message(char **message_stack, int32_t message_stack_depth) {
@@ -76,8 +85,8 @@ static void print_error_message(char **message_stack, int32_t message_stack_dept
 
 void setup() {
     Serial.begin(115200);
-    Serial1.begin(115200);
-    while (!Serial);
+    Serial1.begin(9600);
+    
     
 analogReadResolution(12); // set the resolution of the analog read to 12 bits
 
@@ -89,9 +98,11 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
     IMU.begin();
     IMU.setContinuousMode();
 
-    
-  
+    pinMode(LEDR,OUTPUT);
+    pinMode(LEDB,OUTPUT);
 
+    digitalWrite(LEDR,1);
+    digitalWrite(LEDB,1);
     pv_status_t status = pv_audio_rec_init();
     if (status != PV_STATUS_SUCCESS) {
         Serial.print("Audio init failed with ");
@@ -149,7 +160,11 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
 }
 
 
-char IMUstring[50];
+char IMUstring[70];
+  float ax, ay, az;     
+    float gx, gy, gz; 
+    float mx, my, mz; 
+float mxold, myold, mzold;
 
 void loop() {
 
@@ -160,7 +175,7 @@ void loop() {
    
     if (buffer) {
         const pv_status_t status = pv_picovoice_process(handle, buffer);
-
+         
 
         if (status != PV_STATUS_SUCCESS) {
             Serial.print("Picovoice process failed with ");
@@ -185,21 +200,24 @@ void loop() {
 
 
 
-if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)&&(analogRead(A7)>=2400)) { 
+if((analogRead(A1) <= 2400) && (analogRead(A3)<=2400)) { 
     //for manual mode movement o the servos   prolly activate with sec override as SR latch
-
-
-    float ax, ay, az;     
-    float gx, gy, gz; 
-    float mx, my, mz; 
 
     IMU.readAcceleration(ax, ay, az);
     IMU.readGyroscope(gx, gy, gz);  
-    IMU.readMagneticField(mx, my, mz); // attention must me in micro Tesla
+    static uint64_t timestamp=0;
+    if(millis()-timestamp>110){
+        IMU.readMagneticField(mx, my, mz);
+        timestamp= millis();
+    }
+
+        
+        Serial1.println("<1 A:"+String(ax)+", "+String(ay)+", "+String(az)+ " G:" +String(gx)+", "+String(gy)+", "+String(gz) + " M:" +String(mx)+", "+String(my)+", "+String(mz)+">" ); // send the IMU data to the serial port
     
-    sprintf(IMUstring, "1 A: %.2f, %.2f, %.2f G: %.2f, %.2f, %.2f M: %.2f, %.2f, %.2f", 
-           ax , ay , az,gx, gy, gz,mx, my, mz);
-    Serial1.println(IMUstring);
+    
+    delay(50);
+    
+
 }
 }
 
