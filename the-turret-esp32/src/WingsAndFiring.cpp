@@ -29,6 +29,7 @@ float yaw = 0;
 
 bool fire = false;
 bool doRev = false;
+bool safety = false;
 uint16_t fireDelay = 10;
 uint16_t burstCount = 0;
 
@@ -127,7 +128,7 @@ void WingLoop(){
 
 void FireLoop(){
     for(uint8_t i = 0; i < WINGS; i++){
-        if(doRev){
+        if(doRev && !safety){
             if(!revStartDebounce[i]){
                 revStartDebounce[i] = true;
                 
@@ -160,7 +161,7 @@ void FireLoop(){
                     fireStates[i] = SolOff;
                     digitalWrite(fireSolenoidPins[i], LOW);
                     //digitalWrite(LED_PIN, HIGH);
-                    fireTimer[i] = millis() + FIRE_OFF_MS + fireDelay;
+                    fireTimer[i] = millis() + FIRE_OFF_MS + ((burstCount > 0) ? FIRE_DELAY_BURST : fireDelay);
                 }
             }else if(fireStates[i] == SolOff){
                 if(millis() > fireTimer[i]){
@@ -181,6 +182,7 @@ void FireLoop(){
         }else{
             revStartDebounce[i] = false;
             BBBalance[i] = 0;
+            burstCount = 0;
             WritePWMDuty(revIndxs[i], 0.0f);
             digitalWrite(fireSolenoidPins[i], LOW);
         }

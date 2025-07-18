@@ -12,7 +12,10 @@ extern float yaw;
 
 extern bool fire;
 extern bool doRev;
+extern bool safety;
+extern uint16_t fireDelay;
 extern uint16_t burstCount;
+extern uint16_t fireDelays[];
 
 extern WingState targetWingStates[];
 
@@ -41,6 +44,11 @@ void ParseCommand(const String& msg){
 
   IntentAndSlot res = ParseIntent(msg);
   
+  if(res.intent.length()>0)
+    Serial.println("Intent: " + res.intent);
+  if(res.slot.length()>0)
+    Serial.println("Slot: " + res.slot);
+
   if(res.intent.length()){
     if(res.intent.startsWith("maintenance")){
       turretMode = Manual;
@@ -67,6 +75,25 @@ void ParseCommand(const String& msg){
             Serial.println("Radio");
           }
         }
+    }else if(res.intent.startsWith("rateoffire")){
+      if(res.slot.startsWith("slow")){
+        fireDelay = fireDelays[0];
+
+      }else if(res.slot.startsWith("normal")){
+        fireDelay = fireDelays[1];
+
+      }else if(res.slot.startsWith("fast")){
+        fireDelay = fireDelays[2];
+      }
+      Serial.println("Set firedelay to: " + String(fireDelay));
+
+    }else if(res.intent.startsWith("safety")){
+      if(res.slot.startsWith("on")){
+        safety = true;
+      }else if(res.slot.startsWith("off")){
+        safety = false;
+      }
+      Serial.println("Safety " + safety ? "on" : "off");
     }else if(res.intent.startsWith("cakeisalie")){
       PlayAudio(i_dont_hate_you_wav, i_dont_hate_you_wav_len);
       Serial.println("hate");

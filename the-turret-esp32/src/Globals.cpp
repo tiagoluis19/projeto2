@@ -21,6 +21,8 @@ TurretM turretMode = Manual;
 ESP32I2SAudio i2sAudio(BCLK, LRCLK, DOUT); // BCLK, LRCLK, DOUT (,MCLK)
 ROMBackgroundAudioWAV audio(i2sAudio);
 
+uint16_t fireDelays[3] = {FIRE_DELAY_SLOW, FIRE_DELAY_NORMAL, FIRE_DELAY_FAST};
+
 uint8_t feederSensePins[2] = {FEEDER_SENSE_R, FEEDER_SENSE_L};
 uint8_t fireSolenoidPins[2] = {FIRE_SOLENOID_PIN_R, FIRE_SOLENOID_PIN_L};
 
