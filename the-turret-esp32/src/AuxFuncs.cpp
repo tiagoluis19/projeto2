@@ -51,6 +51,7 @@ void InitPins(){
         pinMode(closedSWPins[i], INPUT_PULLUP);
         pinMode(openSWPins[i], INPUT_PULLUP);
     }
+    randomSeed(analogRead(35));
 }
 
 void InitNeopixel(){
