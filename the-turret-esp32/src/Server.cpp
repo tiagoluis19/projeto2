@@ -103,9 +103,18 @@ void ParseCommand(const String& msg){
     }else if(res.intent.startsWith("cakeisalie")){
       PlayAudio(i_dont_hate_you_wav, i_dont_hate_you_wav_len);
       Serial.println("hate");
+    
+    }else if(res.intent.startsWith("returnauto")){
+      turretMode = Autonomous;
+      targetWingStates[0] = Closed;
+      targetWingStates[1] = Closed;
+      fire = false;
+      doRev = false;
 
     }else if(res.intent.startsWith("controlovr")){
         turretMode = GloveManual;
+        fire = false;
+        doRev = false;
         targetWingStates[0] = Open;
         targetWingStates[1] = Open;
 
@@ -150,6 +159,26 @@ void ParseCommand(const String& msg){
       targetWingStates[0] = Closed;
       targetWingStates[1] = Closed;
 
+    }else if(msg.startsWith("Aopen") && turretMode == Autonomous){
+      targetWingStates[0] = Open;
+      targetWingStates[1] = Open;
+      
+    }else if(msg == "Aclose" && turretMode == Autonomous){
+      targetWingStates[0] = Closed;
+      targetWingStates[1] = Closed;
+
+    }else if(msg.startsWith("ArevOn") && turretMode == Autonomous){
+      doRev = true;
+
+    }else if(msg.startsWith("ArevOff") && turretMode == Autonomous){
+      doRev = false;
+
+    }else if(msg.startsWith("AfireOn") && turretMode == Autonomous){
+      fire = true;
+
+    }else if(msg.startsWith("AfireOff") && turretMode == Autonomous){
+      fire = false;
+
     }else if(msg.startsWith("revOn")){
       doRev = true;
 
@@ -161,6 +190,12 @@ void ParseCommand(const String& msg){
 
     }else if(msg.startsWith("fireOff")){
       fire = false;
+
+    }else if(msg.startsWith("AP") && turretMode == Autonomous){
+      String pSubstr = msg.substring(2, msg.indexOf('Y'));
+      String ySubstr = msg.substring(msg.indexOf('Y') + 1);
+      pitch = pSubstr.toFloat();
+      yaw = ySubstr.toFloat();
     }
   }
 

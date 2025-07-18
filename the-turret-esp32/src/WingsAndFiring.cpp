@@ -56,7 +56,7 @@ FeedState feedStates[WINGS] = {};
 uint64_t feedTimer[WINGS] = {};
 
 void WingLoop(){
-  digitalWrite(LASERS_PIN, doRev && !safety && targetWingStates[0] == Open);
+  digitalWrite(LASERS_PIN, doRev && targetWingStates[0] == Open);
 
   for(uint8_t i = 0; i < WINGS; i++){
     pitches[i] = pitch;
@@ -338,7 +338,7 @@ void loop() {
     static uint64_t sendMillis = 0;
     if(millis() - sendMillis > 100){
         //Serial.println("RIGHT: P: " + String(pitch) + " Y: " + String(yaw) + " S: " + String(wingStates[0]) + " T: " + String(targetWingStates[0]) + " O: " + String(digitalRead(openSWPins[0])) + " C: " + String(digitalRead(closedSWPins[0])));
-        //Serial.println("LEFT: P: " + String(pitch) + " Y: " + String(yaw) + " S: " + String(wingStates[1]) + " T: " + String(targetWingStates[1]) + " O: " + String(digitalRead(openSWPins[1])) + " C: " + String(digitalRead(closedSWPins[1])));
+        Serial.println("LEFT: P: " + String(pitch) + " Y: " + String(yaw) + " S: " + String(wingStates[1]) + " T: " + String(targetWingStates[1]) + " O: " + String(digitalRead(openSWPins[1])) + " C: " + String(digitalRead(closedSWPins[1])));
         
         sendMillis = millis();
     } 
