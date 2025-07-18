@@ -11,11 +11,16 @@
 #include "params.h"
 
 #define BTN_PIN 3
+#define BURST_COUNT 3
 
 #define MEMORY_BUFFER_SIZE (70 * 1024) //pico stuff
 
 #define CONVERT_G_TO_MS2    9.80665f  //EI stuff
 #define MAX_ACCEPTED_RANGE  2.0f 
+
+enum FireModes {FullAuto, Single, Burst};
+bool fire = false;
+FireModes curFiremode = FullAuto;
 
 // IMU stuff
 float gyroX,             gyroY,              gyroZ,             // units dps (degrees per second)        // units dps
@@ -88,8 +93,31 @@ static void inference_callback(pv_inference_t *inference) {
     if(inference->num_slots > 0){
         msg += "{" + String(inference->values[0]) + "}";
     }
-    Serial1.println(msg);
 
+    Serial1.println(msg);
+    
+    
+
+    if(String(inference->intent).startsWith("controlovr")){
+        fire = !fire;
+    }else if(String(inference->intent).startsWith("maintenance")){
+        fire = false;
+
+    }else if(String(inference->intent).startsWith("mode")){
+        Serial.println("Firemode");
+
+        String m = String(inference->values[0]);
+        if(m.startsWith("auto")){
+            curFiremode = FullAuto;
+            Serial.println("Firemode to full");
+        }else if(m.startsWith("manual")){
+            curFiremode = Single;
+            Serial.println("Firemode to single");
+        }else if(m.startsWith("semi")){
+            curFiremode = Burst;
+            Serial.println("Firemode to semi/burst");
+        }
+    }
 
     pv_inference_delete(inference);
     osDelay(200);
@@ -232,7 +260,7 @@ void loop() {
     if((analogRead(A3)<=2300)) { 
         //for manual mode movement o the servos prolly activate with sec override as SR latch
         
-        if(!lastFingerState){
+        if(!lastFingerState && fire){
             lastFingerState = true;
             Serial1.println("revOn");
         }
@@ -241,8 +269,16 @@ void loop() {
         if(fireState != lastFireState){
             lastFireState = fireState;
 
-            if(fireState){
-                Serial1.println("fireOn");
+            if(fireState && fire){
+                if(curFiremode == FullAuto){
+                    Serial1.println("fireOn");
+
+                }else if(curFiremode == Single){
+                    Serial1.println("B1");
+
+                }else if(curFiremode == Burst){
+                    Serial1.println("B" + String(BURST_COUNT));
+                }      
             }else{
                 Serial1.println("fireOff");
             }

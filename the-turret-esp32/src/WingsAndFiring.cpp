@@ -30,6 +30,7 @@ float yaw = 0;
 bool fire = false;
 bool doRev = false;
 uint16_t fireDelay = 10;
+uint16_t burstCount = 0;
 
 WingState wingStates[WINGS] = {};
 WingState targetWingStates[2] = {};
@@ -141,11 +142,16 @@ void FireLoop(){
             }
 
             if(fireStates[i] == Ready && millis() >= revStartMs[i]){
-                if(fire && nextFire == i){
+                if((fire || burstCount > 0) && nextFire == i){
 
                     fireStates[i] = SolOn;
                     digitalWrite(fireSolenoidPins[i], HIGH);
                     //digitalWrite(LED_PIN, LOW);
+
+                    if(burstCount > 0){
+                        burstCount--;
+                    }
+
                     paddleMovementMs = millis();
                     fireTimer[i] = millis() + FIRE_ON_MS;
                 }

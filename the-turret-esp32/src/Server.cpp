@@ -12,6 +12,7 @@ extern float yaw;
 
 extern bool fire;
 extern bool doRev;
+extern uint16_t burstCount;
 
 extern WingState targetWingStates[];
 
@@ -88,7 +89,9 @@ void ParseCommand(const String& msg){
       String ySubstr = msg.substring(msg.indexOf('Y') + 1);
       pitch = pSubstr.toFloat();
       yaw = ySubstr.toFloat();
-
+    }else if(msg.startsWith("B")){
+      burstCount = msg.substring(1).toInt();
+      
     }else if(msg.startsWith("open")){
       targetWingStates[0] = Open;
       targetWingStates[1] = Open;
