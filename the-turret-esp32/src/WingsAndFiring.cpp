@@ -128,7 +128,7 @@ void WingLoop(){
 
 void FireLoop(){
     for(uint8_t i = 0; i < WINGS; i++){
-        if(doRev && !safety){
+        if(doRev && !safety && targetWingStates[0] == Open){
             if(!revStartDebounce[i]){
                 revStartDebounce[i] = true;
                 

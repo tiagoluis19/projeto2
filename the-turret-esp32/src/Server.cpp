@@ -79,7 +79,7 @@ void ParseCommand(const String& msg){
       if(res.slot.startsWith("slow")){
         fireDelay = fireDelays[0];
 
-      }else if(res.slot.startsWith("normal")){
+      }else if(res.slot.startsWith("medium")){
         fireDelay = fireDelays[1];
 
       }else if(res.slot.startsWith("fast")){
@@ -99,18 +99,21 @@ void ParseCommand(const String& msg){
       Serial.println("hate");
 
     }else if(res.intent.startsWith("controlovr")){
-      if(turretMode == GloveManual){
-        turretMode = Manual;
-        targetWingStates[0] = Closed;
-        targetWingStates[1] = Closed;
-      }else{
         turretMode = GloveManual;
         targetWingStates[0] = Open;
         targetWingStates[1] = Open;
+        
+    }else if(res.intent.startsWith("openstatus")){
+      if(res.slot.startsWith("deploy")){
+        targetWingStates[0] = Open;
+        targetWingStates[1] = Open;
+      }else if(res.slot.startsWith("retract")){
+        targetWingStates[0] = Closed;
+        targetWingStates[1] = Closed;
       }
     }
 
-  }else{
+  }else{ // NOT a intent-slot command
     if(msg.startsWith("P") && turretMode == GloveManual){
       String pSubstr = msg.substring(1, msg.indexOf('Y'));
       String ySubstr = msg.substring(msg.indexOf('Y') + 1);

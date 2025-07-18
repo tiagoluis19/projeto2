@@ -99,7 +99,7 @@ static void inference_callback(pv_inference_t *inference) {
     
 
     if(String(inference->intent).startsWith("controlovr")){
-        fire = !fire;
+        fire = true;
     }else if(String(inference->intent).startsWith("maintenance")){
         fire = false;
 
@@ -110,12 +110,12 @@ static void inference_callback(pv_inference_t *inference) {
         if(m.startsWith("auto")){
             curFiremode = FullAuto;
             Serial.println("Firemode to full");
-        }else if(m.startsWith("manual")){
+        }else if(m.startsWith("single")){
             curFiremode = Single;
             Serial.println("Firemode to single");
-        }else if(m.startsWith("semi")){
+        }else if(m.startsWith("burst")){
             curFiremode = Burst;
-            Serial.println("Firemode to semi/burst");
+            Serial.println("Firemode to burst");
         }
     }
 
