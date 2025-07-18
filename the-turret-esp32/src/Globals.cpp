@@ -16,12 +16,16 @@ INA226 currSens[2] = {INA226(0x41), INA226(0x44)};
 NeoPixelBus<NeoGrbFeature, NeoWs2812xMethod> leds(12, NEOPIXEL_RING_PIN);
 NeoGamma<NeoGammaTableMethod> gammaCorr;
 
-TurretM turretMode = Manual;
+TurretM turretMode = Default;
+FireMode fireMode = Auto;
+FireRate fireRate = Fast;
 
 ESP32I2SAudio i2sAudio(BCLK, LRCLK, DOUT); // BCLK, LRCLK, DOUT (,MCLK)
 ROMBackgroundAudioWAV audio(i2sAudio);
 
-uint16_t fireDelays[3] = {FIRE_DELAY_SLOW, FIRE_DELAY_MEDIUM, FIRE_DELAY_FAST};
+uint16_t fireDelays[3] = {FIRE_DELAY_FAST, FIRE_DELAY_MEDIUM, FIRE_DELAY_SLOW};
+
+RgbColor feedBackColors[] = {RgbColor(207, 0, 0), RgbColor(209, 194, 27), RgbColor(65, 224, 11)};
 
 uint8_t feederSensePins[2] = {FEEDER_SENSE_R, FEEDER_SENSE_L};
 uint8_t fireSolenoidPins[2] = {FIRE_SOLENOID_PIN_R, FIRE_SOLENOID_PIN_L};

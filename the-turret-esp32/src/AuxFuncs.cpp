@@ -12,6 +12,13 @@ extern uint8_t fireSolenoidPins[];
 extern uint8_t closedSWPins[];
 extern uint8_t openSWPins[];
 
+extern RgbColor feedBackColors[];
+extern TurretM turretMode;
+extern FireMode fireMode;
+extern FireRate fireRate;
+extern bool safety;
+
+extern uint64_t feedBackMillis;
 
 void InitPWM(){
     Wire.begin();
@@ -69,3 +76,28 @@ void SetRingColor(RgbColor color){
     leds.ClearTo(color);
     leds.Show();
 }
+
+void NeoPixelLoop(){
+    if(millis() - feedBackMillis < 8000){ //Show feedback
+        leds.ClearTo(RgbColor(0,0,0));
+        leds.ClearTo(turretMode == GloveManual ? feedBackColors[2] : feedBackColors[0], 1, 2); //Auto/manual
+        
+        leds.ClearTo(true ? feedBackColors[2] : feedBackColors[0], 3, 4); //Right jam ok
+
+        leds.ClearTo(feedBackColors[fireMode], 5, 6); //Fire mode
+        leds.ClearTo(feedBackColors[fireRate], 7, 8); //Fire rate
+
+        leds.ClearTo(true ? feedBackColors[2] : feedBackColors[0], 9, 10); //Left jam ok
+
+        leds.SetPixelColor(0, true ? feedBackColors[2] : feedBackColors[0]); //Ammo state
+        leds.SetPixelColor(11, true ? feedBackColors[2] : feedBackColors[0]); //Ammo state
+
+        //leds.ClearTo(feedBackColors[1], 2, 3);
+        //leds.ClearTo(feedBackColors[2], 4, 5);
+        leds.Show();
+    }else{
+        SetRingColor(safety ? RgbColor(0,0,180) : RgbColor(180,0,0));
+    }
+}
+
+//show jams, firerate, fire mode, safety, auto/manual, ammo

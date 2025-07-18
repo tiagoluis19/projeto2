@@ -103,6 +103,8 @@
     enum WingState {Unknown, Open, Closing, ClosingSlow, Closed, Opening, Zeroing};
     enum FireState {Ready, SolOn, SolOff};
     enum FeedState {Nominal, Jam, Clump, Cooldown};
-    enum TurretM {Autonomous, GloveManual, Manual};
+    enum TurretM {Autonomous, GloveManual, Default};
+    enum FireMode {Auto = 0, Burst = 1, Single = 2};
+    enum FireRate {Fast = 0, Medium = 1, Slow = 2};
 
 #endif

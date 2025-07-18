@@ -21,3 +21,5 @@ void WriteServoSpeed(uint8_t indx, float s);
 void WritePWMDuty(uint8_t, float);
 
 void SetRingColor(RgbColor);
+
+void NeoPixelLoop();

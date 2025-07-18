@@ -24,13 +24,15 @@ extern uint8_t revIndxs[];
 extern float pitchOffts[];
 extern float yawOffts[];
 
+extern uint16_t fireDelays[];
+extern FireRate fireRate;
+
 float pitch = 0;
 float yaw = 0;
 
 bool fire = false;
 bool doRev = false;
 bool safety = false;
-uint16_t fireDelay = 10;
 uint16_t burstCount = 0;
 
 WingState wingStates[WINGS] = {};
@@ -54,7 +56,7 @@ FeedState feedStates[WINGS] = {};
 uint64_t feedTimer[WINGS] = {};
 
 void WingLoop(){
-  digitalWrite(LASERS_PIN, doRev);
+  digitalWrite(LASERS_PIN, doRev && !safety && targetWingStates[0] == Open);
 
   for(uint8_t i = 0; i < WINGS; i++){
     pitches[i] = pitch;
@@ -161,7 +163,7 @@ void FireLoop(){
                     fireStates[i] = SolOff;
                     digitalWrite(fireSolenoidPins[i], LOW);
                     //digitalWrite(LED_PIN, HIGH);
-                    fireTimer[i] = millis() + FIRE_OFF_MS + ((burstCount > 0) ? FIRE_DELAY_BURST : fireDelay);
+                    fireTimer[i] = millis() + FIRE_OFF_MS + ((burstCount > 0) ? FIRE_DELAY_BURST : fireDelays[fireRate]);
                 }
             }else if(fireStates[i] == SolOff){
                 if(millis() > fireTimer[i]){
@@ -267,7 +269,7 @@ void setup() {
     InitPins();
     InitPWM();
     InitNeopixel();
-    SetRingColor(RgbColor(180,0,0));
+    
 
     WiFi.softAP("Turret", "idonthateyou");
 
@@ -282,7 +284,7 @@ void setup() {
     InitServer();
     InitAudio();
 
-    delay(2500); //Prevents boot from being high when opening serial
+    //delay(2500); //Prevents boot from being high when opening serial
     Serial.println(WiFi.softAPIP());
 }
 
@@ -331,6 +333,7 @@ void loop() {
     WingLoop();
     FireLoop();
     FeedLoop();
+    NeoPixelLoop();
 
     static uint64_t sendMillis = 0;
     if(millis() - sendMillis > 100){

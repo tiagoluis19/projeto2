@@ -13,13 +13,16 @@ extern float yaw;
 extern bool fire;
 extern bool doRev;
 extern bool safety;
-extern uint16_t fireDelay;
 extern uint16_t burstCount;
 extern uint16_t fireDelays[];
+
+uint64_t feedBackMillis = 0;
 
 extern WingState targetWingStates[];
 
 extern TurretM turretMode;
+extern FireMode fireMode;
+extern FireRate fireRate;
 
 WiFiUDP udp;
 
@@ -51,7 +54,7 @@ void ParseCommand(const String& msg){
 
   if(res.intent.length()){
     if(res.intent.startsWith("maintenance")){
-      turretMode = Manual;
+      turretMode = Default;
 
       pitch = 0.0f;
       yaw = 0.0f;
@@ -77,15 +80,15 @@ void ParseCommand(const String& msg){
         }
     }else if(res.intent.startsWith("rateoffire")){
       if(res.slot.startsWith("slow")){
-        fireDelay = fireDelays[0];
+        fireRate = Slow;
 
       }else if(res.slot.startsWith("medium")){
-        fireDelay = fireDelays[1];
+        fireRate = Medium;
 
       }else if(res.slot.startsWith("fast")){
-        fireDelay = fireDelays[2];
+        fireRate = Fast;
       }
-      Serial.println("Set firedelay to: " + String(fireDelay));
+      Serial.println("Set firerate to: " + String(fireRate));
 
     }else if(res.intent.startsWith("safety")){
       if(res.slot.startsWith("on")){
@@ -94,6 +97,9 @@ void ParseCommand(const String& msg){
         safety = false;
       }
       Serial.println("Safety " + safety ? "on" : "off");
+    
+    }else if(res.intent.startsWith("feedback")){
+      feedBackMillis = millis();
     }else if(res.intent.startsWith("cakeisalie")){
       PlayAudio(i_dont_hate_you_wav, i_dont_hate_you_wav_len);
       Serial.println("hate");
@@ -102,15 +108,29 @@ void ParseCommand(const String& msg){
         turretMode = GloveManual;
         targetWingStates[0] = Open;
         targetWingStates[1] = Open;
-        
+
     }else if(res.intent.startsWith("openstatus")){
       if(res.slot.startsWith("deploy")){
         targetWingStates[0] = Open;
         targetWingStates[1] = Open;
+
       }else if(res.slot.startsWith("retract")){
         targetWingStates[0] = Closed;
         targetWingStates[1] = Closed;
       }
+    }else if(res.intent.startsWith("mode")){
+        Serial.println("Firemode");
+
+        if(res.slot.startsWith("auto")){
+            fireMode = Auto;
+            Serial.println("Firemode to full");
+        }else if(res.slot.startsWith("single")){
+            fireMode = Single;
+            Serial.println("Firemode to single");
+        }else if(res.slot.startsWith("burst")){
+            fireMode = Burst;
+            Serial.println("Firemode to burst");
+        }
     }
 
   }else{ // NOT a intent-slot command
