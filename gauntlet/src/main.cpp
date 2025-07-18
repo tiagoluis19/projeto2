@@ -150,6 +150,7 @@ analogReadResolution(12); // set the resolution of the analog read to 12 bits
     pinMode(LEDR,OUTPUT);
     pinMode(LEDB,OUTPUT);
     pinMode(LEDG, OUTPUT);
+    pinMode(13, OUTPUT);
     
     digitalWrite(LEDG, 1);
     digitalWrite(LEDR,1);
@@ -284,13 +285,17 @@ void loop() {
             }
         }
 
-        //order is "wrong" on purpose
+        
         digitalWrite(LEDG, 0);
+        digitalWrite(13, 0);
+
         if(millis() - lastGyroMs > 30){
+            //order is "wrong" on purpose
             Serial1.println("P" +String(gyroCorrectedRoll)+"Y"+String(-gyroCorrectedPitch)); // send the IMU data to the serial port
         }
     }else{
         digitalWrite(LEDG, 1);
+        digitalWrite(13, 0);
 
         if(lastFingerState){
             lastFingerState = false;
