@@ -4,3 +4,5 @@
 void InitAudio();
 void PlayAudio(const unsigned char[], unsigned int);
 void TargetFoundVoiceline();
+void TargetLostVoiceline();
+void CloseVoiceline();

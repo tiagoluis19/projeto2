@@ -5,28 +5,24 @@ from ultralytics import YOLO
 import torch
 import time
 
-# Check GPU availability
-print("CUDA available:", torch.cuda.is_available())
-print("Using device:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
-
 
 UDP_IP = "192.168.4.1"
 UDP_PORT = 21
 
 YAW_ANGLE = 30
 PITCH_ANGLE = 50
-MAX_MISSED_FRAMES_CLOSE = 20
-MAX_MISSED_FRAMES_VOICELINE = 8
+MIN_FRAMES_TARGET_FOUND = 3
+MAX_MISSED_FRAMES_STOP_FIRE = 8
+MAX_MISSED_FRAMES_VOICELINE = 20
+MAX_MISSED_FRAMES_CLOSE = 90
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
+found_frames = 0
 missed_frames = 0
 is_open = False
-lost_target_debouce = False
-
-# Initialize YOLOv8 model (use your trained or pre-trained model)
-model = YOLO('yolov8n.pt')  # lightweight for real-time
-model.to('cuda')  # force GPU, optional
+lost_target_debouce = True
+firing = False
 
 # ESP32-CAM MJPEG stream URL
 stream_url = "http://192.168.4.10:81/stream"
@@ -35,6 +31,15 @@ cap = cv2.VideoCapture(stream_url)
 if not cap.isOpened():
     print("Error: Cannot open ESP32-CAM stream.")
     exit()
+
+# Check GPU availability
+print("CUDA available:", torch.cuda.is_available())
+print("Using device:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+
+# Initialize YOLOv8 model (use your trained or pre-trained model)
+model = YOLO('yolov8n.pt')  # lightweight for real-time
+model.to('cuda')  # force GPU, optional
+
 
 prev_time = time.time()
 
@@ -68,20 +73,30 @@ while True:
         if not is_open:
             is_open = True
             sock.sendto(bytearray("Aopen".encode()), (UDP_IP, UDP_PORT))
-            sock.sendto(bytearray("voiceline_found".encode()), (UDP_IP, UDP_PORT))
+            sock.sendto(bytearray("Avoiceline_found".encode()), (UDP_IP, UDP_PORT))
             sock.sendto(bytearray("ArevOn".encode()), (UDP_IP, UDP_PORT))
             sock.sendto(bytearray("AfireOn".encode()), (UDP_IP, UDP_PORT))
+            lost_target_debouce = False
+
+        if is_open and not firing:
+            sock.sendto(bytearray("AfireOn".encode()), (UDP_IP, UDP_PORT))
+            firing = True
     else:
         missed_frames += 1
 
+        if missed_frames > MAX_MISSED_FRAMES_STOP_FIRE and firing:
+            sock.sendto(bytearray("AfireOff".encode()), (UDP_IP, UDP_PORT))
+            firing = False
+
         if missed_frames >= MAX_MISSED_FRAMES_VOICELINE and not lost_target_debouce:
-            sock.sendto(bytearray("voiceline_lost".encode()), (UDP_IP, UDP_PORT))
+            sock.sendto(bytearray("Avoiceline_lost".encode()), (UDP_IP, UDP_PORT))
+            lost_target_debouce = True
 
         if missed_frames > MAX_MISSED_FRAMES_CLOSE and is_open:
             is_open = False
             sock.sendto(bytearray("Aclose".encode()), (UDP_IP, UDP_PORT))
             sock.sendto(bytearray("ArevOff".encode()), (UDP_IP, UDP_PORT))
-            sock.sendto(bytearray("voiceline_close".encode()), (UDP_IP, UDP_PORT))
+            sock.sendto(bytearray("Avoiceline_close".encode()), (UDP_IP, UDP_PORT))
 
     lowest_dist_indx = None
     lowest_dist = 123123132

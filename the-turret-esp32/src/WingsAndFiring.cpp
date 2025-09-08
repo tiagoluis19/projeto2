@@ -311,14 +311,20 @@ void loop() {
             fire = false;
         }else if(r == 't'){
             doRev = true;
-
         }else if (r == 'u'){
             targetWingStates[0] = Closed;
             targetWingStates[1] = Closed;
         }else if (r == 'o'){
             targetWingStates[0] = Open;
             targetWingStates[1] = Open;
+        }else if (r == 'e'){
+            TargetFoundVoiceline();
+        }else if (r == 'd'){
+            TargetLostVoiceline();
+        }else if (r == 'c'){
+            CloseVoiceline();
         }
+        
 
         pitch = constrain(pitch, PITCH_MIN_ANGLE, PITCH_MAX_ANGLE); 
         yaw = constrain(yaw, -YAW_MAX_ANGLE, YAW_MAX_ANGLE); //using the negative of min as max is intentional

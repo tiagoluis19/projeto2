@@ -179,9 +179,19 @@ void ParseCommand(const String& msg){
     }else if(msg.startsWith("AfireOff") && turretMode == Autonomous){
       fire = false;
 
-    }else if(msg.startsWith("voiceline_found")){
-      //TargetFoundVoiceline(); Commented: speaker makes the voicelines sad, plus it's crashing for some reason
+    }else if(msg.startsWith("Avoiceline_found") && turretMode == Autonomous){
+      TargetFoundVoiceline();
+    }else if(msg.startsWith("Avoiceline_lost") && turretMode == Autonomous){
+      TargetLostVoiceline();
+    }else if(msg.startsWith("Avoiceline_close") && turretMode == Autonomous){
+      CloseVoiceline();
 
+    }else if(msg.startsWith("voiceline_found")){
+      TargetFoundVoiceline();
+    }else if(msg.startsWith("voiceline_lost")){
+      TargetLostVoiceline();
+    }else if(msg.startsWith("voiceline_close")){
+      CloseVoiceline();
     }else if(msg.startsWith("revOn")){
       doRev = true;
 
