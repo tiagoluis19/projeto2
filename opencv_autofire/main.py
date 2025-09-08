@@ -11,8 +11,8 @@ UDP_PORT = 21
 
 YAW_ANGLE = 30
 PITCH_ANGLE = 50
-MIN_FRAMES_TARGET_FOUND = 3
-MAX_MISSED_FRAMES_STOP_FIRE = 8
+MIN_FRAMES_TARGET_FOUND = 2
+MAX_MISSED_FRAMES_STOP_FIRE = 6
 MAX_MISSED_FRAMES_VOICELINE = 20
 MAX_MISSED_FRAMES_CLOSE = 90
 
@@ -70,7 +70,8 @@ while True:
 
     if len(persons) > 0:
         missed_frames = 0
-        if not is_open:
+        found_frames += 1
+        if not is_open and found_frames > MIN_FRAMES_TARGET_FOUND:
             is_open = True
             sock.sendto(bytearray("Aopen".encode()), (UDP_IP, UDP_PORT))
             sock.sendto(bytearray("Avoiceline_found".encode()), (UDP_IP, UDP_PORT))
@@ -82,6 +83,7 @@ while True:
             sock.sendto(bytearray("AfireOn".encode()), (UDP_IP, UDP_PORT))
             firing = True
     else:
+        found_frames = 0
         missed_frames += 1
 
         if missed_frames > MAX_MISSED_FRAMES_STOP_FIRE and firing:
