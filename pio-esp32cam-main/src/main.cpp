@@ -29,6 +29,8 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
+  pinMode(33, OUTPUT);
+  digitalWrite(33, 1);
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -95,19 +97,25 @@ void setup() {
   IPAddress gateway(192, 168, 4, 1);
   IPAddress subnet(255, 255, 255, 0);
 
-
   
   if (!WiFi.config(local_IP, gateway, subnet)) {
     Serial.println("STA Failed to configure");
   }
   WiFi.begin(ssid, password);
   
-  Serial.println(WiFi.subnetMask());
+  //Serial.println(WiFi.subnetMask());
+
+  bool blink = false;
   while (WiFi.status() != WL_CONNECTED) {
+    blink = !blink;
+    digitalWrite(33, blink);
     delay(500);
     Serial.print(".");
   }
   //WiFi.softAP("testing", "12345678");
+
+  digitalWrite(33, 0);
+
   Serial.println("");
   Serial.println("WiFi connected");
   
